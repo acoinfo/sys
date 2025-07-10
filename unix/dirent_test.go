@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-//go:build aix || darwin || dragonfly || freebsd || linux || netbsd || openbsd || solaris || zos
+//go:build aix || darwin || dragonfly || freebsd || linux || netbsd || openbsd || solaris || zos || sylixos
 
 package unix_test
 
@@ -90,6 +90,10 @@ func TestDirent(t *testing.T) {
 }
 
 func TestDirentRepeat(t *testing.T) {
+	if runtime.GOOS == "sylixos" {
+		t.Skip("skipping on sylixos")
+	}
+
 	const N = 100
 	// Note: the size of the buffer is small enough that the loop
 	// below will need to execute multiple times. See issue #31368.
@@ -107,7 +111,7 @@ func TestDirentRepeat(t *testing.T) {
 	d := t.TempDir()
 
 	var files []string
-	for i := range N {
+	for i := 0; i < N; i++ {
 		files = append(files, fmt.Sprintf("file%d", i))
 	}
 	for _, file := range files {

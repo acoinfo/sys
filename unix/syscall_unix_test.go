@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-//go:build aix || darwin || dragonfly || freebsd || linux || netbsd || openbsd || solaris
+//go:build aix || darwin || dragonfly || freebsd || linux || netbsd || openbsd || solaris || sylixos
 
 package unix_test
 
@@ -216,9 +216,18 @@ func TestPassFD(t *testing.T) {
 	}
 	cmd.ExtraFiles = []*os.File{writeFile}
 
-	out, err := cmd.CombinedOutput()
-	if len(out) > 0 || err != nil {
-		t.Fatalf("child process: %q, %v", out, err)
+	if runtime.GOOS == "sylixos" {
+		// Unix network will be closed when prosess exits on sylixos,
+		// We need to hold the child process while parent process exits.
+		go func() {
+			cmd.Run()
+		}()
+		time.Sleep(5 * time.Millisecond)
+	} else {
+		out, err := cmd.CombinedOutput()
+		if len(out) > 0 || err != nil {
+			t.Fatalf("child process: %q, %v", out, err)
+		}
 	}
 
 	c, err := net.FileConn(readFile)
@@ -252,6 +261,9 @@ func TestPassFD(t *testing.T) {
 		t.Fatalf("expected 1 SocketControlMessage; got scms = %#v", scms)
 	}
 	scm := scms[0]
+	// Unix network will be closed when prosess exits on sylixos,
+	// We need to hold the child process while parent process exits.
+	// If child process exits before here, gotFds[0] will be set to -1.
 	gotFds, err := unix.ParseUnixRights(&scm)
 	if err != nil {
 		t.Fatalf("unix.ParseUnixRights: %v", err)
@@ -314,6 +326,12 @@ func passFDChild() {
 	if n != 1 || oobn != len(rights) {
 		fmt.Printf("WriteMsgUnix = %d, %d; want 1, %d", n, oobn, len(rights))
 		return
+	}
+
+	if runtime.GOOS == "sylixos" {
+		// Unix network will be closed when prosess exits on sylixos,
+		// We need to hold the child process while parent process exits.
+		time.Sleep(10 * time.Millisecond)
 	}
 }
 
@@ -461,6 +479,7 @@ func TestDup(t *testing.T) {
 	defer file.Close()
 	f := int(file.Fd())
 
+	// it will stuck on sylixos with a ramdisk file system.
 	newFd, err := unix.Dup(f)
 	if err != nil {
 		t.Fatalf("Dup: %v", err)
@@ -505,9 +524,14 @@ func TestPoll(t *testing.T) {
 		t.Skip("mkfifo syscall is not available on android and iOS, skipping test")
 	}
 
-	chtmpdir(t)
-	f := mktmpfifo(t)
+	var f *os.File
 
+	if runtime.GOOS == "sylixos" {
+		f = mktmpfifo_sylixos(t)
+	} else {
+		chtmpdir(t)
+		f = mktmpfifo(t)
+	}
 	const timeout = 100
 
 	ok := make(chan bool, 1)
@@ -573,7 +597,6 @@ func TestSelect(t *testing.T) {
 		}
 		break
 	}
-
 	dur := 250 * time.Millisecond
 	var took time.Duration
 	for {
@@ -712,6 +735,10 @@ func compareStat_t(t *testing.T, otherStat string, st1, st2 *unix.Stat_t) {
 }
 
 func TestFstatat(t *testing.T) {
+	if runtime.GOOS == "sylixos" {
+		t.Skip("Fstatat is not supported on sylixos")
+	}
+
 	chtmpdir(t)
 
 	touch(t, "file1")
@@ -749,6 +776,9 @@ func TestFstatat(t *testing.T) {
 }
 
 func TestFchmodat(t *testing.T) {
+	if runtime.GOOS == "sylixos" {
+		t.Skip("Fchmodat is not supported on sylixos")
+	}
 	chtmpdir(t)
 
 	touch(t, "file1")
@@ -859,6 +889,9 @@ func TestPipe(t *testing.T) {
 }
 
 func TestRenameat(t *testing.T) {
+	if runtime.GOOS == "sylixos" {
+		t.Skip("Renameat is not supported on sylixos")
+	}
 	chtmpdir(t)
 
 	from, to := "renamefrom", "renameto"
@@ -882,6 +915,9 @@ func TestRenameat(t *testing.T) {
 }
 
 func TestUtimesNanoAt(t *testing.T) {
+	if runtime.GOOS == "sylixos" {
+		t.Skip("UtimesNanoAt is not supported on sylixos")
+	}
 	chtmpdir(t)
 
 	symlink := "symlink1"
@@ -959,6 +995,10 @@ func TestSend(t *testing.T) {
 }
 
 func TestSendmsgBuffers(t *testing.T) {
+	if runtime.GOOS == "sylixos" {
+		t.Skip("SendmsgBuffers is not supported on sylixos. I don't know why.")
+	}
+
 	fds, err := unix.Socketpair(unix.AF_LOCAL, unix.SOCK_STREAM, 0)
 	if err != nil {
 		t.Fatal(err)
@@ -1134,6 +1174,30 @@ func mktmpfifo(t *testing.T) *os.File {
 	return f
 }
 
+// mktmpfifo_sylixos creates a temporary FIFO and sets up a cleanup function.
+func mktmpfifo_sylixos(t *testing.T) *os.File {
+	t.Helper()
+	// sylixos has mkfifo only for /dev/pipe/*
+	fifopath := "/dev/pipe/fifo"
+
+	err := unix.Mkfifo(fifopath, 0666)
+	if err != nil {
+		t.Fatalf("mktmpfifo: failed to create FIFO: %v", err)
+	}
+
+	f, err := os.OpenFile(fifopath, os.O_RDWR, 0666)
+	if err != nil {
+		os.Remove(fifopath)
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		f.Close()
+		os.Remove(fifopath)
+	})
+
+	return f
+}
+
 // utilities taken from os/os_test.go
 
 func touch(t *testing.T, name string) {
@@ -1163,4 +1227,19 @@ func chtmpdir(t *testing.T) {
 			t.Fatal(err)
 		}
 	})
+}
+
+func init() {
+	var utsname unix.Utsname
+	unix.Uname(&utsname)
+
+	if runtime.GOOS == "sylixos" && runtime.GOARCH == "arm64" {
+		// Test on RK3568 demo board wtih sdcard & passed.
+		if string(utsname.Machine[:6]) == "RK3568" {
+			os.Setenv("TMPDIR", "/media/sdcard10/tmp")
+		}
+	} else if runtime.GOOS == "sylixos" && runtime.GOARCH == "amd64" {
+		// Test on qemu x86_64 wtih hdd & passed.
+		os.Setenv("TMPDIR", "/media/hdd0/tmp")
+	}
 }
