@@ -2,9 +2,10 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+//go:build sylixos
+
 // Functions to access/create device major and minor numbers matching the
 // encoding used in sylixos's system/ioLib/ioInterface.c.
-
 package unix
 
 // sylixos not use major and minor
