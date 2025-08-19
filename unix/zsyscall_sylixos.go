@@ -562,14 +562,14 @@ func Fchmodat(dirfd int, path string, mode uint32, flags int) (err error) {
 }
 
 func Fadvise(fd int, offset int64, length int64, advice int) (err error) {
-	_, _, e1 := syscall_syscall6(libc_posix_fadvise_addr, uintptr(fd), uintptr(offset), uintptr(length), uintptr(advice), 0, 0)
+	_, _, e1 := syscall_syscall6(libc_posix_fadvise_trampoline_addr, uintptr(fd), uintptr(offset), uintptr(length), uintptr(advice), 0, 0)
 	if e1 != 0 {
 		err = errnoErr(e1)
 	}
 	return
 }
 
-var libc_posix_fadvise_addr uintptr
+var libc_posix_fadvise_trampoline_addr uintptr
 
 //go:cgo_import_dynamic libc_posix_fadvise posix_fadvise "libvpmpdm.so"
 
