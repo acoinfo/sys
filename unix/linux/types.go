@@ -2384,6 +2384,11 @@ const (
 	NFT_CT_AVGPKT                     = C.NFT_CT_AVGPKT
 	NFT_CT_ZONE                       = C.NFT_CT_ZONE
 	NFT_CT_EVENTMASK                  = C.NFT_CT_EVENTMASK
+	NFT_CT_SRC_IP                     = C.NFT_CT_SRC_IP
+	NFT_CT_DST_IP                     = C.NFT_CT_DST_IP
+	NFT_CT_SRC_IP6                    = C.NFT_CT_SRC_IP6
+	NFT_CT_DST_IP6                    = C.NFT_CT_DST_IP6
+	NFT_CT_ID                         = C.NFT_CT_ID
 	NFTA_CT_UNSPEC                    = C.NFTA_CT_UNSPEC
 	NFTA_CT_DREG                      = C.NFTA_CT_DREG
 	NFTA_CT_KEY                       = C.NFTA_CT_KEY
@@ -4149,6 +4154,19 @@ const (
 	ETHTOOL_A_TUNNEL_INFO_HEADER              = C.ETHTOOL_A_TUNNEL_INFO_HEADER
 	ETHTOOL_A_TUNNEL_INFO_UDP_PORTS           = C.ETHTOOL_A_TUNNEL_INFO_UDP_PORTS
 	ETHTOOL_A_TUNNEL_INFO_MAX                 = C.ETHTOOL_A_TUNNEL_INFO_MAX
+)
+
+const (
+	TCP_V4_FLOW    = C.TCP_V4_FLOW
+	UDP_V4_FLOW    = C.UDP_V4_FLOW
+	TCP_V6_FLOW    = C.TCP_V6_FLOW
+	UDP_V6_FLOW    = C.UDP_V6_FLOW
+	ESP_V4_FLOW    = C.ESP_V4_FLOW
+	ESP_V6_FLOW    = C.ESP_V6_FLOW
+	IP_USER_FLOW   = C.IP_USER_FLOW
+	IPV6_USER_FLOW = C.IPV6_USER_FLOW
+	IPV6_FLOW      = C.IPV6_FLOW
+	ETHER_FLOW     = C.ETHER_FLOW
 )
 
 const SPEED_UNKNOWN = C.SPEED_UNKNOWN
