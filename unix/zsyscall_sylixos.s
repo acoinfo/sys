@@ -175,6 +175,11 @@ TEXT libc_fchmod_trampoline<>(SB),NOSPLIT,$0-0
 GLOBL	·libc_fchmod_trampoline_addr(SB), RODATA, $8
 DATA	·libc_fchmod_trampoline_addr(SB)/8, $libc_fchmod_trampoline<>(SB)
 
+TEXT libc_posix_fadvise_trampoline<>(SB),NOSPLIT,$0-0
+	JMP	libc_posix_fadvise(SB)
+GLOBL	·libc_posix_fadvise_trampoline_addr(SB), RODATA, $8
+DATA	·libc_posix_fadvise_trampoline_addr(SB)/8, $libc_posix_fadvise_trampoline<>(SB)
+
 TEXT libc_fchown_trampoline<>(SB),NOSPLIT,$0-0
 	JMP	libc_fchown(SB)
 GLOBL	·libc_fchown_trampoline_addr(SB), RODATA, $8
