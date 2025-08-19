@@ -561,8 +561,8 @@ func Fchmodat(dirfd int, path string, mode uint32, flags int) (err error) {
 	return EINVAL
 }
 
-func Fadvise(fd int, uid int, gid int) (err error) {
-	_, _, e1 := syscall_syscall(libc_posix_fadvise_addr, uintptr(fd), uintptr(uid), uintptr(gid))
+func Fadvise(fd int, offset int64, length int64, advice int) (err error) {
+	_, _, e1 := syscall_syscall6(libc_posix_fadvise_addr, uintptr(fd), uintptr(offset), uintptr(length), uintptr(advice), 0, 0)
 	if e1 != 0 {
 		err = errnoErr(e1)
 	}
